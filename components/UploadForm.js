@@ -73,7 +73,13 @@ export default function UploadForm() {
 
     try {
       setStatus("Membuat thumbnail otomatis dari video...");
-      const thumbnailBlob = await captureThumbnailFromFile(file);
+      let thumbnailBlob = null;
+      try {
+        thumbnailBlob = await captureThumbnailFromFile(file);
+      } catch (thumbErr) {
+        console.warn("Thumbnail otomatis gagal, lanjut tanpa thumbnail:", thumbErr);
+        thumbnailBlob = null;
+      }
 
       setStatus("Mengupload video...");
       const videoBlob = await upload(file.name, file, {
@@ -82,14 +88,20 @@ export default function UploadForm() {
         onUploadProgress: ({ percentage }) => setProgress(percentage),
       });
 
-      setStatus("Mengupload thumbnail...");
-      const thumbFilename = `${Date.now()}.jpg`;
-      const thumbRes = await fetch(`/api/upload/thumbnail?filename=${thumbFilename}`, {
-        method: "POST",
-        body: thumbnailBlob,
-      });
-      if (!thumbRes.ok) throw new Error("Gagal upload thumbnail.");
-      const thumbBlob = await thumbRes.json();
+      let thumbBlob = null;
+      if (thumbnailBlob) {
+        setStatus("Mengupload thumbnail...");
+        const thumbFilename = `${Date.now()}.jpg`;
+        const thumbRes = await fetch(`/api/upload/thumbnail?filename=${thumbFilename}`, {
+          method: "POST",
+          body: thumbnailBlob,
+        });
+        if (thumbRes.ok) {
+          thumbBlob = await thumbRes.json();
+        } else {
+          console.warn("Upload thumbnail gagal, lanjut tanpa thumbnail.");
+        }
+      }
 
       setStatus("Menyimpan data film...");
       const movieRes = await fetch("/api/movies", {
@@ -102,14 +114,18 @@ export default function UploadForm() {
           videoUrl: videoBlob.url,
           videoPathname: videoBlob.pathname,
           mimeType: file.type,
-          thumbnailUrl: thumbBlob.url,
-          thumbnailPathname: thumbBlob.pathname,
+          thumbnailUrl: thumbBlob?.url || null,
+          thumbnailPathname: thumbBlob?.pathname || null,
         }),
       });
       const movieData = await movieRes.json();
       if (!movieRes.ok) throw new Error(movieData.error || "Gagal menyimpan film.");
 
-      setStatus(`"${movieData.title}" berhasil diupload.`);
+      setStatus(
+        thumbBlob
+          ? `"${movieData.title}" berhasil diupload.`
+          : `"${movieData.title}" berhasil diupload (tanpa thumbnail otomatis — video ini tidak bisa dibaca browser untuk membuat thumbnail).`
+      );
       form.reset();
       router.refresh();
     } catch (err) {
