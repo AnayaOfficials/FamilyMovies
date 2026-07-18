@@ -1,5 +1,5 @@
 // app/layout.js
-import "./app/globals.css";
+import "./app./globals.css";
 
 export const metadata = {
   title: "FamilyMovie",
