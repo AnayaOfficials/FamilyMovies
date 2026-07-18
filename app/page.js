@@ -1,11 +1,13 @@
-// app/page.js
+// app/admin/page.js
 import Nav from "@/components/Nav";
+import UploadForm from "@/components/UploadForm";
+import DeleteMovieButton from "@/components/DeleteMovieButton";
 import { listMovies } from "@/lib/db";
 import { getCurrentUser } from "@/lib/session";
 
-export const dynamic = "force-dynamic"; // always show the latest uploads
+export const dynamic = "force-dynamic";
 
-export default async function HomePage() {
+export default async function AdminPage() {
   const currentUser = await getCurrentUser();
   const movies = await listMovies();
 
@@ -13,37 +15,53 @@ export default async function HomePage() {
     <>
       <Nav currentUser={currentUser} />
       <main className="container">
-        <section className="hero">
-          <div className="hero-eyebrow">Bioskop keluarga, di rumah sendiri</div>
-          <h1>Malam ini nonton apa?</h1>
-          <p>Koleksi film yang diupload keluarga, siap ditonton kapan saja, dari mana saja.</p>
+        <section className="hero" style={{ paddingBottom: 0 }}>
+          <div className="hero-eyebrow">Panel admin</div>
+          <h1>Upload film baru</h1>
+          <p>Pilih file video, isi judulnya — thumbnail dibuat otomatis di browser, tidak butuh FFmpeg di server.</p>
         </section>
 
-        {movies.length === 0 ? (
-          <div className="empty-state">
-            <h2>Belum ada film</h2>
-            <p>Minta admin upload film pertama lewat Panel Admin.</p>
+        <div className="admin-grid">
+          <UploadForm />
+
+          <div className="panel">
+            <h2>Film terupload</h2>
+            <p className="subtitle">{movies.length} film di perpustakaan</p>
+
+            {movies.length === 0 ? (
+              <p className="hint">Belum ada film yang diupload.</p>
+            ) : (
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th>Thumbnail</th>
+                    <th>Judul</th>
+                    <th>Genre</th>
+                    <th>Diupload oleh</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {movies.map((movie) => (
+                    <tr key={movie.id}>
+                      <td>
+                        {movie.thumbnailUrl ? (
+                          <img className="admin-thumb" src={movie.thumbnailUrl} alt="" />
+                        ) : (
+                          <div className="admin-thumb" />
+                        )}
+                      </td>
+                      <td><a href={`/watch/${movie.id}`}>{movie.title}</a></td>
+                      <td>{movie.genre || "—"}</td>
+                      <td>{movie.uploadedBy}</td>
+                      <td><DeleteMovieButton movieId={movie.id} /></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
-        ) : (
-          <div className="movie-grid">
-            {movies.map((movie) => (
-              <a href={`/watch/${movie.id}`} className="ticket-link" key={movie.id}>
-                <article className="ticket">
-                  {movie.thumbnailUrl ? (
-                    <img className="ticket-poster" src={movie.thumbnailUrl} alt={`Thumbnail ${movie.title}`} />
-                  ) : (
-                    <div className="ticket-poster placeholder">{movie.title}</div>
-                  )}
-                  <div className="ticket-body">
-                    {movie.genre && <div className="ticket-meta">{movie.genre}</div>}
-                    <h3 className="ticket-title">{movie.title}</h3>
-                    {movie.description && <p className="ticket-desc">{movie.description}</p>}
-                  </div>
-                </article>
-              </a>
-            ))}
-          </div>
-        )}
+        </div>
       </main>
       <footer className="site-footer">FamilyMovie · koleksi pribadi keluarga</footer>
     </>
