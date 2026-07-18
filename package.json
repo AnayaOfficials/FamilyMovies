@@ -1,0 +1,22 @@
+{
+  "name": "familymovie-vercel",
+  "version": "1.0.0",
+  "private": true,
+  "description": "FamilyMovie — deployable on Vercel. Admin uploads a video, a thumbnail is captured automatically in the browser, and family members stream it from any device.",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  },
+  "dependencies": {
+    "next": "^15.1.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "@vercel/blob": "^1.0.0",
+    "@upstash/redis": "^1.34.0",
+    "jose": "^5.9.6"
+  },
+  "engines": {
+    "node": ">=18.17.0"
+  }
+}
