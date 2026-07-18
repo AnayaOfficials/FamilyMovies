@@ -3,6 +3,8 @@ import { NextResponse } from "next/server";
 import { handleUpload } from "@vercel/blob/client";
 import { getCurrentUser } from "@/lib/session";
 
+const BLOB_TOKEN = "vercel_blob_rw_K4GLVfEM16jdfLfG_bMRHipNhlssOXsR8c8kCjEgG9tO0n0";
+
 export async function POST(request) {
   const body = await request.json();
 
@@ -10,6 +12,7 @@ export async function POST(request) {
     const jsonResponse = await handleUpload({
       body,
       request,
+      token: BLOB_TOKEN,
       onBeforeGenerateToken: async () => {
         // Defense in depth: middleware already blocks non-admins from
         // reaching this route, but we check again here since this route
