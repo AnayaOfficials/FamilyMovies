@@ -17,7 +17,25 @@ function captureThumbnailFromFile(file) {
     videoEl.playsInline = true;
     videoEl.src = URL.createObjectURL(file);
 
-    const cleanup = () => URL.revokeObjectURL(videoEl.src);
+    let settled = false;
+    const timeoutId = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      reject(new Error("Timeout membuat thumbnail (video tidak merespons dalam 10 detik)."));
+    }, 10000);
+
+    const cleanup = () => {
+      clearTimeout(timeoutId);
+      URL.revokeObjectURL(videoEl.src);
+    };
+
+    const settle = (fn, arg) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      fn(arg);
+    };
 
     videoEl.onloadedmetadata = () => {
       const seekTo = Math.min(Math.max(videoEl.duration * 0.1, 1), 20) || 1;
@@ -32,8 +50,7 @@ function captureThumbnailFromFile(file) {
       ctx.drawImage(videoEl, 0, 0, canvas.width, canvas.height);
       canvas.toBlob(
         (blob) => {
-          cleanup();
-          blob ? resolve(blob) : reject(new Error("Gagal mengambil thumbnail dari video."));
+          settle(blob ? resolve : reject, blob || new Error("Gagal mengambil thumbnail dari video."));
         },
         "image/jpeg",
         0.85
@@ -41,8 +58,7 @@ function captureThumbnailFromFile(file) {
     };
 
     videoEl.onerror = () => {
-      cleanup();
-      reject(new Error("Browser tidak bisa membaca file video ini untuk membuat thumbnail."));
+      settle(reject, new Error("Browser tidak bisa membaca file video ini untuk membuat thumbnail."));
     };
   });
 }
